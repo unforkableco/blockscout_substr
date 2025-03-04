@@ -1,0 +1,87 @@
+name: Deploy Blockscout on AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Release version to deploy (e.g., v1.0.0)"
+        required: true
+      rpc_url:
+        description: "RPC URL of the Substrate node"
+        required: true
+
+jobs:
+  deploy-blockscout:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Create AWS EC2 instance for Blockscout
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        INSTANCE_ID=$(aws ec2 run-instances --image-id ami-04b4f1a9cf54c11d0 --count 1 --instance-type t3.medium --security-group-ids sg-0442d41440d018db1 \
+          --key-name unforkable \
+          --user-data file://scripts/setup_blockscout.sh \
+          --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=blockscout-${{ inputs.release_version }}},{Key=Project,Value=Blockscout}]" \
+          --query "Instances[0].InstanceId" --output text)
+        
+        echo "BLOCKSCOUT_INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+        echo "New AWS EC2 instance created with ID: $INSTANCE_ID"
+
+    - name: Get Public IP of the Instance
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $BLOCKSCOUT_INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+        echo "BLOCKSCOUT_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+        echo "AWS Instance Public IP: $PUBLIC_IP"
+
+    - name: Wait for Instance to Be Ready
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        echo "Waiting for AWS instance to be ready..."
+        aws ec2 wait instance-status-ok --instance-ids $BLOCKSCOUT_INSTANCE_ID
+        echo "AWS instance is now running."
+
+    - name: Setup SSH Key
+      run: |
+          mkdir -p ~/.ssh  # Ensure the directory exists
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/my-key.pem
+          chmod 600 ~/.ssh/my-key.pem
+
+    - name: Log in to AWS Instance & Deploy Blockscout
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        echo "Logging into AWS Instance..."
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ubuntu@$BLOCKSCOUT_PUBLIC_IP <<EOF
+          echo "Updating system and installing dependencies..."
+          sudo apt update && sudo apt install -y docker.io docker-compose
+
+          echo "Cloning Blockscout repository..."
+          git clone https://github.com/blockscout/blockscout.git
+          cd blockscout
+
+          echo "Configuring Blockscout..."
+          cp docker-compose.example.yml docker-compose.yml
+          sed -i 's|WS_URL=.*|WS_URL=${{ inputs.rpc_url }}|' docker-compose.yml
+
+          echo "Starting Blockscout..."
+          sudo docker-compose up -d
+        EOF
+
+    - name: Output Blockscout URL
+      run: |
+        echo "Blockscout is now deployed at: http://$BLOCKSCOUT_PUBLIC_IP"
