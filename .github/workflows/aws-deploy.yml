@@ -26,7 +26,7 @@ jobs:
       run: |
         INSTANCE_ID=$(aws ec2 run-instances --image-id ami-04b4f1a9cf54c11d0 --count 1 --instance-type t3.medium --security-group-ids sg-0442d41440d018db1 \
           --key-name unforkable \
-          --user-data file://scripts/setup_blockscout.sh \
+          --user-data file://scripts/setup.sh \
           --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=blockscout-${{ inputs.release_version }}},{Key=Project,Value=Blockscout}]" \
           --query "Instances[0].InstanceId" --output text)
         
@@ -59,28 +59,18 @@ jobs:
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/my-key.pem
           chmod 600 ~/.ssh/my-key.pem
 
-    - name: Log in to AWS Instance & Deploy Blockscout
+    - name: Deploy Blockscout on AWS
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        RPC_URL: "${{ inputs.rpc_url }}"
+        
       run: |
-        echo "Logging into AWS Instance..."
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ubuntu@$BLOCKSCOUT_PUBLIC_IP <<EOF
-          echo "Updating system and installing dependencies..."
-          sudo apt update && sudo apt install -y docker.io docker-compose
-
-          echo "Cloning Blockscout repository..."
-          git clone https://github.com/blockscout/blockscout.git
-          cd blockscout
-
-          echo "Configuring Blockscout..."
-          cp docker-compose.example.yml docker-compose.yml
-          sed -i 's|WS_URL=.*|WS_URL=${{ inputs.rpc_url }}|' docker-compose.yml
-
-          echo "Starting Blockscout..."
-          sudo docker-compose up -d
-        EOF
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ubuntu@$NODE_PUBLIC_IP <<EOF
+                chmod +x setup.sh
+                ./setup_blockscout.sh $RPC_URL
+            EOF
 
     - name: Output Blockscout URL
       run: |
