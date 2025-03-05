@@ -20,7 +20,13 @@ jobs:
 
     - name: Inject RPC URL into setup script
       run: |
-        echo "export RPC_URL=${{ inputs.rpc_url }}" >> scripts/setup.sh
+        echo '#!/bin/bash' > scripts/setup_with_rpc.sh
+        echo 'set -e' >> scripts/setup_with_rpc.sh
+        echo 'export DEBIAN_FRONTEND=noninteractive' >> scripts/setup_with_rpc.sh
+        echo "RPC_URL=\"${{ inputs.rpc_url }}\"" >> scripts/setup_with_rpc.sh
+        cat scripts/setup.sh >> scripts/setup_with_rpc.sh  # Append actual setup script
+    
+    
 
     - name: Create AWS EC2 instance for Blockscout
       env:
@@ -30,7 +36,7 @@ jobs:
       run: |
         INSTANCE_ID=$(aws ec2 run-instances --image-id ami-04b4f1a9cf54c11d0 --count 1 --instance-type t3.medium --security-group-ids sg-0442d41440d018db1 \
           --key-name unforkable \
-          --user-data file://scripts/setup.sh \
+          --user-data file://scripts/setup_with_rpc.sh \
           --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=blockscout-${{ inputs.release_version }}},{Key=Project,Value=Blockscout}]" \
           --query "Instances[0].InstanceId" --output text)
         
