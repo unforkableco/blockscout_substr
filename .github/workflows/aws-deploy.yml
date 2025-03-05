@@ -47,6 +47,16 @@ jobs:
         echo "BLOCKSCOUT_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
         echo "AWS Instance Public IP: $PUBLIC_IP"
 
+    - name: Wait for Instance to Be Ready
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        echo "Waiting for AWS instance to be ready..."
+        aws ec2 wait instance-status-ok --instance-ids $BLOCKSCOUT_INSTANCE_ID
+        echo "AWS instance is now running."
+
 
     - name: Output Blockscout URL
       run: |
