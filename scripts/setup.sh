@@ -6,7 +6,7 @@ export DEBIAN_FRONTEND=noninteractive
 # Variables
 GITHUB_REPO="unforkableco/blockscout_substr"
 EXPLORER_DIR="/opt/blockscout"
-RPC_URL=$1
+# RPC_URL=$1 injected by github actions
 
 # Ensure RPC URL is provided
 if [ -z "$RPC_URL" ]; then
