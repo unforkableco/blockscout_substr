@@ -41,7 +41,6 @@ cd $EXPLORER_DIR/docker-compose
 # Create `.env` configuration
 echo "⚙️ Creating environment configuration..."
 cat <<EOF > .env
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/blockscout
 ETHEREUM_JSONRPC_HTTP_URL=$RPC_URL
 ETHEREUM_JSONRPC_TRACE_URL=$RPC_URL
 ETHEREUM_JSONRPC_WS_URL=$RPC_URL
