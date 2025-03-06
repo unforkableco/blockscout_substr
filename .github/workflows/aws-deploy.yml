@@ -34,7 +34,8 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
       run: |
-        INSTANCE_ID=$(aws ec2 run-instances --image-id ami-04b4f1a9cf54c11d0 --count 1 --instance-type t3.medium --security-group-ids sg-0442d41440d018db1 \
+        INSTANCE_ID=$(aws ec2 run-instances --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20}}]' \
+          --image-id ami-04b4f1a9cf54c11d0 --count 1 --instance-type t3.medium --security-group-ids sg-0442d41440d018db1 \
           --key-name unforkable \
           --user-data file://scripts/setup_with_rpc.sh \
           --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=blockscout-${{ inputs.release_version }}},{Key=Project,Value=Blockscout}]" \

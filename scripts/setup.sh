@@ -53,4 +53,4 @@ EOF
 
 # Start Blockscout using Docker Compose
 echo "🐳 Running Blockscout with Docker Compose..."
-sudo docker compose up -d --build
+sudo docker-compose up -d --build
