@@ -68,8 +68,8 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=$EXPLORER_DIR/docker-compose
-ExecStart=/usr/bin/docker compose up --force-recreate
-ExecStop=/usr/bin/docker compose down
+ExecStart=/usr/bin/docker-compose up --force-recreate
+ExecStop=/usr/bin/docker-compose down
 Restart=always
 RestartSec=10
 User=ubuntu
