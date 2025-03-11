@@ -29,6 +29,11 @@ sudo apt install -y curl git jq tmux systemd docker.io docker-compose
 echo "🐳 Ensuring Docker is running..."
 sudo systemctl enable --now docker
 
+# **Ensure the 'ubuntu' user can run Docker without sudo**
+echo "👤 Adding ubuntu user to docker group..."
+sudo usermod -aG docker ubuntu
+newgrp docker
+
 # Clone Blockscout repository
 echo "⬇️ Fetching Blockscout repository..."
 sudo mkdir -p $EXPLORER_DIR
