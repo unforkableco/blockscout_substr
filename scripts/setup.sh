@@ -68,14 +68,22 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=$EXPLORER_DIR/docker-compose
-ExecStart=/usr/bin/docker-compose up -d --build
-ExecStop=/usr/bin/docker-compose down
+ExecStart=/usr/bin/docker compose up --force-recreate
+ExecStop=/usr/bin/docker compose down
 Restart=always
+RestartSec=10
 User=ubuntu
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+
+# Set permissions for Blockscout directory
+sudo chown -R ubuntu:ubuntu /opt/blockscout
+sudo chmod -R 755 /opt/blockscout
 
 # Enable and start Blockscout as a systemd service
 echo "🚀 Enabling and starting Blockscout service..."
