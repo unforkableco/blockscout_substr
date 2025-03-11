@@ -33,12 +33,8 @@ services:
         RELEASE_VERSION: 7.0.2
     links:
       - db:database
-    environment:
-        ETHEREUM_JSONRPC_HTTP_URL: http://98.82.35.0:9944
-        ETHEREUM_JSONRPC_WS_URL: ws://98.82.35.0:9944
-        ETHEREUM_JSONRPC_VARIANT: 'geth'
-        NFT_MEDIA_HANDLER_ENABLED: 'false'
-        CHAIN_ID: '1666'
+    env_file:
+      - .env
 
   # nft_media_handler:
   #   depends_on:
