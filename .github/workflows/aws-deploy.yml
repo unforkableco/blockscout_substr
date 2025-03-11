@@ -64,19 +64,25 @@ jobs:
         aws ec2 wait instance-status-ok --instance-ids $BLOCKSCOUT_INSTANCE_ID
         echo "AWS instance is now running."
 
-    - name: Wait for Blockscout to Start
+    - name: Wait for Blockscout to Start & Verify Block Indexing
       run: |
-            echo "Waiting for Blockscout to be accessible..."
-            for i in {1..30}; do
-            if curl -s --head --request GET http://$BLOCKSCOUT_PUBLIC_IP | grep "200 OK" > /dev/null; then
-                echo "✅ Blockscout is up and running!"
-                exit 0
-            fi
-            echo "🔄 Blockscout not available yet. Retrying in 10 seconds..."
-            sleep 10
-            done
-            echo "❌ Blockscout did not start in time!"
-            exit 1
+        echo "Waiting for Blockscout to start indexing blocks..."
+
+        for i in {1..30}; do
+        BLOCK_COUNT=$(curl -s http://$BLOCKSCOUT_PUBLIC_IP/api/v2/blocks?page=1&offset=1 | jq -r '.items | length')
+
+        if [[ "$BLOCK_COUNT" -gt 0 ]]; then
+            echo "✅ Blockscout is up and indexing blocks! Current block count: $BLOCK_COUNT"
+            exit 0
+        fi
+
+        echo "🔄 Blockscout not fully indexed yet. Retrying in 10 seconds..."
+        sleep 10
+        done
+
+        echo "❌ Blockscout did not start indexing in time!"
+        exit 1
+
                
     - name: Output Blockscout URL
       run: |
