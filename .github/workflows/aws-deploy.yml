@@ -26,16 +26,14 @@ jobs:
         echo "RPC_URL=\"${{ inputs.rpc_url }}\"" >> scripts/setup_with_rpc.sh
         cat scripts/setup.sh >> scripts/setup_with_rpc.sh  # Append actual setup script
     
-    
-
     - name: Create AWS EC2 instance for Blockscout
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
       run: |
-        INSTANCE_ID=$(aws ec2 run-instances --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":20}}]' \
-          --image-id ami-04b4f1a9cf54c11d0 --count 1 --instance-type t3.medium --security-group-ids sg-0442d41440d018db1 \
+        INSTANCE_ID=$(aws ec2 run-instances --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":40,"VolumeType":"gp3"}}]' \
+          --image-id ami-04b4f1a9cf54c11d0 --count 1 --instance-type t3.large --security-group-ids sg-0442d41440d018db1 \
           --key-name unforkable \
           --user-data file://scripts/setup_with_rpc.sh \
           --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=blockscout-${{ inputs.release_version }}},{Key=Project,Value=Blockscout}]" \
@@ -54,7 +52,7 @@ jobs:
         echo "BLOCKSCOUT_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
         echo "AWS Instance Public IP: $PUBLIC_IP"
 
-    - name: Wait for Instance to Be Ready
+    - name: Wait for Instance to Be Ready and Services to Start
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -63,7 +61,12 @@ jobs:
         echo "Waiting for AWS instance to be ready..."
         aws ec2 wait instance-status-ok --instance-ids $BLOCKSCOUT_INSTANCE_ID
         echo "AWS instance is now running."
+        
+        # Wait additional time for services to start
+        echo "Waiting for services to start..."
+        sleep 300
                
     - name: Output Blockscout URL
       run: |
         echo "Blockscout is now deployed at: http://$BLOCKSCOUT_PUBLIC_IP"
+        echo "Note: It may take a few minutes for all services to fully initialize."

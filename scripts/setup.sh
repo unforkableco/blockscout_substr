@@ -23,11 +23,37 @@ sudo apt update && sudo apt upgrade -y
 
 # Install dependencies
 echo "📦 Installing dependencies..."
-sudo apt install -y curl git jq tmux systemd docker.io
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common git
+
+# Add Docker's official GPG key & repository
+echo "🔑 Adding Docker repository..."
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+# Install Docker and Docker Compose
+echo "🐳 Installing Docker and Docker Compose..."
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Verify Docker installation
+echo "🔍 Verifying Docker installation..."
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker installation failed!"
+    exit 1
+fi
+
+if ! command -v docker compose &> /dev/null; then
+    echo "❌ Docker Compose installation failed!"
+    exit 1
+fi
+
+docker --version
+docker compose version
 
 # Ensure Docker service is running
 echo "🐳 Ensuring Docker is running..."
 sudo systemctl enable --now docker
+sudo systemctl status docker --no-pager
 
 # **Ensure the 'ubuntu' user can run Docker without sudo**
 echo "👤 Adding ubuntu user to docker group..."
@@ -45,7 +71,7 @@ cd $EXPLORER_DIR/docker-compose
 
 # Create `.env` configuration
 echo "⚙️ Creating environment configuration..."
-cat <<EOF > .env
+cat > .env << EOF
 ETHEREUM_JSONRPC_HTTP_URL=http://$RPC_URL
 ETHEREUM_JSONRPC_TRACE_URL=http://$RPC_URL
 ETHEREUM_JSONRPC_WS_URL=ws://$RPC_URL
@@ -68,8 +94,8 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=$EXPLORER_DIR/docker-compose
-ExecStart=/usr/local/bin/docker compose up --force-recreate
-ExecStop=/usr/local/bin/docker compose down
+ExecStart=/usr/bin/docker compose up --force-recreate
+ExecStop=/usr/bin/docker compose down
 Restart=always
 RestartSec=10
 User=ubuntu
@@ -84,10 +110,16 @@ EOF
 sudo chown -R ubuntu:ubuntu /opt/blockscout
 sudo chmod -R 755 /opt/blockscout
 
-# Enable and start Blockscout as a systemd service
+# Enable and start Blockscout service
 echo "🚀 Enabling and starting Blockscout service..."
 sudo systemctl daemon-reload
 sudo systemctl enable blockscout
 sudo systemctl start blockscout
 
+# Wait for service to start and verify it's running
+echo "⏳ Waiting for service to start..."
+sleep 30
+sudo systemctl status blockscout --no-pager
+
 echo "✅ Blockscout setup complete!"
+echo "🌐 Access the explorer at http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
