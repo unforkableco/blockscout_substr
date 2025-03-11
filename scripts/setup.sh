@@ -53,6 +53,29 @@ ETHEREUM_JSONRPC_VARIANT=geth
 CHAIN_ID=1666
 EOF
 
-# Start Blockscout using Docker Compose
-echo "🐳 Running Blockscout with Docker Compose..."
-sudo docker-compose up -d --build
+# Create a systemd service for Blockscout
+echo "⚙️ Creating systemd service for Blockscout..."
+sudo tee /etc/systemd/system/blockscout.service > /dev/null <<EOF
+[Unit]
+Description=Blockscout Explorer
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=$EXPLORER_DIR/docker-compose
+ExecStart=/usr/bin/docker-compose up -d --build
+ExecStop=/usr/bin/docker-compose down
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start Blockscout as a systemd service
+echo "🚀 Enabling and starting Blockscout service..."
+sudo systemctl daemon-reload
+sudo systemctl enable blockscout
+sudo systemctl start blockscout
+
+echo "✅ Blockscout setup complete!"
