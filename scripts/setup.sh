@@ -23,7 +23,7 @@ sudo apt update && sudo apt upgrade -y
 
 # Install dependencies
 echo "📦 Installing dependencies..."
-sudo apt install -y curl git jq tmux systemd docker.io docker-compose
+sudo apt install -y curl git jq tmux systemd docker.io
 
 # Ensure Docker service is running
 echo "🐳 Ensuring Docker is running..."
@@ -68,8 +68,8 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=$EXPLORER_DIR/docker-compose
-ExecStart=/usr/bin/docker-compose up --force-recreate
-ExecStop=/usr/bin/docker-compose down
+ExecStart=/usr/local/bin/docker compose up --force-recreate
+ExecStop=/usr/local/bin/docker compose down
 Restart=always
 RestartSec=10
 User=ubuntu
@@ -79,7 +79,6 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
-
 
 # Set permissions for Blockscout directory
 sudo chown -R ubuntu:ubuntu /opt/blockscout

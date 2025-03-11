@@ -74,4 +74,4 @@ queue_storage
 tasks_in_progress
 /dets
 
-/temp
+/tempdocker-compose/.env

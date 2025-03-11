@@ -1,0 +1,50 @@
+FROM ubuntu:20.04
+
+# Avoid prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install basic requirements
+RUN apt-get update && apt-get install -y \
+    sudo \
+    systemd \
+    systemd-sysv \
+    curl \
+    git \
+    jq \
+    tmux \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/* \
+    && cd /lib/systemd/system/sysinit.target.wants/ \
+    && ls | grep -v systemd-tmpfiles-setup | xargs rm -f $1 \
+    && rm -f /lib/systemd/system/multi-user.target.wants/* \
+    && rm -f /etc/systemd/system/*.wants/* \
+    && rm -f /lib/systemd/system/local-fs.target.wants/* \
+    && rm -f /lib/systemd/system/sockets.target.wants/*udev* \
+    && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
+    && rm -f /lib/systemd/system/basic.target.wants/* \
+    && rm -f /lib/systemd/system/anaconda.target.wants/* \
+    && rm -f /lib/systemd/system/plymouth* \
+    && rm -f /lib/systemd/system/systemd-update-utmp*
+
+# Install Docker Compose v2
+RUN mkdir -p /usr/local/lib/docker/cli-plugins && \
+    curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && \
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose && \
+    ln -s /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+
+# Create ubuntu user and add to sudo group
+RUN useradd -m -s /bin/bash ubuntu && \
+    usermod -aG sudo ubuntu && \
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu
+
+# Copy setup script
+COPY scripts/setup.sh /setup.sh
+RUN chmod +x /setup.sh
+
+# Set working directory
+WORKDIR /
+
+VOLUME [ "/sys/fs/cgroup" ]
+
+# Use systemd as entrypoint
+CMD ["/lib/systemd/systemd"] 
