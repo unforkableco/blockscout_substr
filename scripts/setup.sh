@@ -122,6 +122,10 @@ NEXT_PUBLIC_API_SPEC_URL=https://raw.githubusercontent.com/blockscout/blockscout
 NEXT_PUBLIC_NETWORK_RPC_URL=http://$RPC_URL
 EOF
 
+# Fix CORS configuration in nginx templates
+echo "⚙️ Fixing CORS configuration in nginx templates..."
+sed -i "s|http://localhost:3000|http://$SERVER_IP|g" ./proxy/microservices.conf.template
+
 # Create a systemd service for Blockscout
 echo "⚙️ Creating systemd service for Blockscout..."
 sudo tee /etc/systemd/system/blockscout.service > /dev/null <<EOF
