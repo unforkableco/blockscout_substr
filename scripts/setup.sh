@@ -80,6 +80,10 @@ else
   echo "⚠️ Could not detect chain ID, using default: $CHAIN_ID"
 fi
 
+# Get server IP address
+SERVER_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+echo "🌐 Server IP address: $SERVER_IP"
+
 # Create `.env` configuration
 echo "⚙️ Creating environment configuration..."
 cat > .env << EOF
@@ -93,6 +97,18 @@ INDEXER_DISABLE_NFT_FETCHER=true
 NFT_MEDIA_HANDLER_ENABLED=false
 ETHEREUM_JSONRPC_VARIANT=geth
 CHAIN_ID=$CHAIN_ID
+
+# Frontend configuration
+NEXT_PUBLIC_API_HOST=$SERVER_IP
+NEXT_PUBLIC_API_PROTOCOL=http
+NEXT_PUBLIC_API_PORT=
+NEXT_PUBLIC_API_PATH_PREFIX=
+NEXT_PUBLIC_NETWORK_NAME=Custom Network
+NEXT_PUBLIC_NETWORK_SHORT_NAME=Custom
+NEXT_PUBLIC_NETWORK_LOGO=https://raw.githubusercontent.com/blockscout/frontend-configs/main/configs/network-logos/ethereum.svg
+NEXT_PUBLIC_NETWORK_ICON=https://raw.githubusercontent.com/blockscout/frontend-configs/main/configs/network-icons/ethereum.svg
+NEXT_PUBLIC_NETWORK_RPC_URL=http://$RPC_URL
+NEXT_PUBLIC_IS_TESTNET=true
 EOF
 
 # Create a systemd service for Blockscout
@@ -133,4 +149,4 @@ sleep 30
 sudo systemctl status blockscout --no-pager
 
 echo "✅ Blockscout setup complete!"
-echo "🌐 Access the explorer at http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+echo "🌐 Access the explorer at http://$SERVER_IP"
