@@ -69,6 +69,17 @@ git clone https://github.com/$GITHUB_REPO.git $EXPLORER_DIR || (cd $EXPLORER_DIR
 # Move to Blockscout directory
 cd $EXPLORER_DIR/docker-compose
 
+# Get chain ID from RPC endpoint
+echo "🔍 Detecting chain ID from RPC endpoint..."
+CHAIN_ID_HEX=$(curl -s -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' http://$RPC_URL | grep -o '"result":"0x[^"]*"' | cut -d'"' -f4 | sed 's/0x//')
+if [ -n "$CHAIN_ID_HEX" ]; then
+  CHAIN_ID=$((16#$CHAIN_ID_HEX))
+  echo "✅ Detected chain ID: $CHAIN_ID"
+else
+  CHAIN_ID=42
+  echo "⚠️ Could not detect chain ID, using default: $CHAIN_ID"
+fi
+
 # Create `.env` configuration
 echo "⚙️ Creating environment configuration..."
 cat > .env << EOF
@@ -77,11 +88,11 @@ ETHEREUM_JSONRPC_TRACE_URL=http://$RPC_URL
 ETHEREUM_JSONRPC_WS_URL=ws://$RPC_URL
 NETWORK=custom
 SUBNETWORK=pos
-BLOCK_TRANSFORMER=clique
+BLOCK_TRANSFORMER=base
 INDEXER_DISABLE_NFT_FETCHER=true
 NFT_MEDIA_HANDLER_ENABLED=false
 ETHEREUM_JSONRPC_VARIANT=geth
-CHAIN_ID=1666
+CHAIN_ID=$CHAIN_ID
 EOF
 
 # Create a systemd service for Blockscout
