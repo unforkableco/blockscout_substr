@@ -82,7 +82,12 @@ fi
 
 # Get server IP address
 SERVER_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-echo "🌐 Server IP address: $SERVER_IP"
+if [ -z "$SERVER_IP" ]; then
+  echo "⚠️ Could not detect server IP, using localhost"
+  SERVER_IP="localhost"
+else
+  echo "🌐 Server IP address: $SERVER_IP"
+fi
 
 # Create `.env` configuration
 echo "⚙️ Creating environment configuration..."
@@ -162,6 +167,11 @@ sudo systemctl start blockscout
 echo "⏳ Waiting for service to start..."
 sleep 30
 sudo systemctl status blockscout --no-pager
+
+# Verify and fix CORS configuration in running container
+echo "⚙️ Verifying CORS configuration in running container..."
+docker exec proxy sed -i "s|http://localhost|http://$SERVER_IP|g" /etc/nginx/conf.d/default.conf
+docker exec proxy nginx -s reload
 
 echo "✅ Blockscout setup complete!"
 echo "🌐 Access the explorer at http://$SERVER_IP"
