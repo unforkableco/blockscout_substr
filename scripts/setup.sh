@@ -97,18 +97,29 @@ INDEXER_DISABLE_NFT_FETCHER=true
 NFT_MEDIA_HANDLER_ENABLED=false
 ETHEREUM_JSONRPC_VARIANT=geth
 CHAIN_ID=$CHAIN_ID
+EOF
 
-# Frontend configuration
+# Create frontend environment configuration
+echo "⚙️ Creating frontend environment configuration..."
+cat > ./envs/common-frontend.env << EOF
 NEXT_PUBLIC_API_HOST=$SERVER_IP
 NEXT_PUBLIC_API_PROTOCOL=http
-NEXT_PUBLIC_API_PORT=
-NEXT_PUBLIC_API_PATH_PREFIX=
+NEXT_PUBLIC_STATS_API_HOST=http://$SERVER_IP:8080
 NEXT_PUBLIC_NETWORK_NAME=Custom Network
 NEXT_PUBLIC_NETWORK_SHORT_NAME=Custom
-NEXT_PUBLIC_NETWORK_LOGO=https://raw.githubusercontent.com/blockscout/frontend-configs/main/configs/network-logos/ethereum.svg
-NEXT_PUBLIC_NETWORK_ICON=https://raw.githubusercontent.com/blockscout/frontend-configs/main/configs/network-icons/ethereum.svg
-NEXT_PUBLIC_NETWORK_RPC_URL=http://$RPC_URL
+NEXT_PUBLIC_NETWORK_ID=$CHAIN_ID
+NEXT_PUBLIC_NETWORK_CURRENCY_NAME=Ether
+NEXT_PUBLIC_NETWORK_CURRENCY_SYMBOL=ETH
+NEXT_PUBLIC_NETWORK_CURRENCY_DECIMALS=18
+NEXT_PUBLIC_API_BASE_PATH=/
+NEXT_PUBLIC_APP_HOST=$SERVER_IP
+NEXT_PUBLIC_APP_PROTOCOL=http
+NEXT_PUBLIC_HOMEPAGE_CHARTS=['daily_txs']
+NEXT_PUBLIC_VISUALIZE_API_HOST=http://$SERVER_IP:8081
 NEXT_PUBLIC_IS_TESTNET=true
+NEXT_PUBLIC_API_WEBSOCKET_PROTOCOL=ws
+NEXT_PUBLIC_API_SPEC_URL=https://raw.githubusercontent.com/blockscout/blockscout-api-v2-swagger/main/swagger.yaml
+NEXT_PUBLIC_NETWORK_RPC_URL=http://$RPC_URL
 EOF
 
 # Create a systemd service for Blockscout
