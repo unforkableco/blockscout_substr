@@ -91,12 +91,26 @@ else
 fi
 
 # Get server IP address
-SERVER_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+echo "🔍 Detecting server IP address..."
+MAX_RETRIES=5
+RETRY_COUNT=0
+SERVER_IP=""
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  SERVER_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+  if [ -n "$SERVER_IP" ]; then
+    echo "✅ Detected server IP address: $SERVER_IP"
+    break
+  fi
+  echo "⚠️ Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES: Could not detect server IP, retrying..."
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+  sleep 5
+done
+
 if [ -z "$SERVER_IP" ]; then
-  echo "⚠️ Could not detect server IP, using localhost"
-  SERVER_IP="localhost"
-else
-  echo "🌐 Server IP address: $SERVER_IP"
+  echo "❌ ERROR: Could not detect server IP after $MAX_RETRIES attempts!"
+  echo "Please ensure the EC2 instance has a public IP address."
+  exit 1
 fi
 
 # Set protocol based on HTTPS configuration
@@ -121,6 +135,13 @@ INDEXER_DISABLE_NFT_FETCHER=true
 NFT_MEDIA_HANDLER_ENABLED=false
 ETHEREUM_JSONRPC_VARIANT=geth
 CHAIN_ID=$CHAIN_ID
+# Disable features that require unsupported RPC methods
+INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER=true
+INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=true
+DISABLE_EXCHANGE_RATES=true
+DISABLE_KNOWN_TOKENS=true
+DISABLE_BRIDGE_MARKET_CAP_UPDATER=true
+DISABLE_SOURCIFY_INTEGRATION=true
 EOF
 
 # Create frontend environment configuration
